@@ -27,3 +27,5 @@ ENV/
 
 # Private notes
 NOTES/
+
+venv/

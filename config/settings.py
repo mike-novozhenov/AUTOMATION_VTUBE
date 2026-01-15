@@ -1,12 +1,15 @@
-class Config:
-    # URL adresses
-    CRM_URL = "https://admin-panel.sbx.foresfox.com/sites/repository/sites-list"
-    SITE_LIVE_URL = "https://erozyx.com"
-    SITE_TEST_URL = "https://newui.sites.foresfox.com"
+# Base URL
+BASE_URL = "https://erozyx.com"
 
-    # Credentials for SITE_TEST_URL
-    SITE_TEST_USER_LOGIN = "admin"
-    SITE_TEST_USER_PASSWORD = "RFaIbezxgDqEzHmo"
+# Глобальный порог скорости для всех страниц (SLA)
+MAX_WAIT_TIME = 1.0
 
-    # Сюда же добавим настройки для Docker позже
-    BROWSER = "chrome"
+# Список страниц для мониторинга (Endpoints)
+# Ты можешь добавлять сюда любые пути
+ENDPOINTS = [
+    BASE_URL + "/",               # Home
+    BASE_URL + "/videos",         # Videos
+    BASE_URL + "/categories",     # Niches or Categories list
+    BASE_URL + "/channels",       # Channels
+    BASE_URL + "/community",       # Community
+]
