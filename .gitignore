@@ -1,0 +1,29 @@
+# Python (временные файлы компиляции)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyTest (кэш тестов)
+.pytest_cache/
+.hypothesis/
+
+# IDE (настройки Visual Studio Code)
+.vscode/
+.idea/
+
+# Виртуальное окружение (если создаешь его внутри папки проекта)
+venv/
+env/
+ENV/
+
+
+# Логи и отчеты
+*.log
+/reports/
+/screenshots/
+
+# Секретные данные
+.env
+
+# Private notes
+NOTES/
