@@ -8,7 +8,7 @@ from config.settings import ENDPOINTS, MAX_WAIT_TIME
 @pytest.mark.parametrize("url", ENDPOINTS)
 def test_check_all_pages_health(url):
     """
-    Term: Parametrization — запуск одного теста с разными входными данными.
+    Term: Parametrization — running one test with different input data
     """
     start_time = time.time()
     
