@@ -51,16 +51,16 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./allure-report
 
-      - name: Send Telegram Notification
-        # Заменили упавший экшен на стабильный appleboy
-        uses: appleboy/telegram-action@master
-        if: always()
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: |
-            🚀 Health Check Completed!
-            Status: ${{ job.status }}
-            Project: ${{ github.repository }}
+      # - name: Send Telegram Notification
+      #   # Заменили упавший экшен на стабильный appleboy
+      #   uses: appleboy/telegram-action@master
+      #   if: always()
+      #   with:
+      #     to: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #     token: ${{ secrets.TELEGRAM_TOKEN }}
+      #     message: |
+      #       🚀 Health Check Completed!
+      #       Status: ${{ job.status }}
+      #       Project: ${{ github.repository }}
             
-            Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      #       Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
