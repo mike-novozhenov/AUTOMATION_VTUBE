@@ -25,9 +25,11 @@ jobs:
 
       - name: Run Availability and Speed Test
         run: |
+          # Сначала запускаем тесты, игнорируя их падение для продолжения шагов
           pytest tests/cron_tests/test_health.py || true
+          # Гарантируем наличие папки и копируем категории
           mkdir -p allure-results
-          cp categories.json allure-results/
+          cp categories.json allure-results/ || echo "categories.json missing"
           ls -l allure-results/
         continue-on-error: true
 
@@ -48,9 +50,15 @@ jobs:
           publish_dir: ./allure-report
 
       - name: Send Telegram Notification
-        uses: hjnavas/allure-notifications-action@v1
+        # Заменили упавший экшен на стабильный appleboy
+        uses: appleboy/telegram-action@master
         if: always()
         with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
-          allure_results: allure-results
+          message: |
+            🚀 Health Check Completed!
+            Status: ${{ job.status }}
+            Project: ${{ github.repository }}
+            
+            Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
