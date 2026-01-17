@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Product defects (Site errors)",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*[Aa]ssertion[Ee]rror.*"
+  },
+  {
+    "name": "Performance issues (Slow response)",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*[Tt]hreshold.*"
+  },
+  {
+    "name": "Infrastructure / Network issues",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(Requests|Connection|Urllib3|Timeout|timeout).*"
+  },
+  {
+    "name": "Test defects (Code issues)",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*"
+  }
+]

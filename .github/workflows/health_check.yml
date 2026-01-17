@@ -1,0 +1,56 @@
+name: Scheduled Health Check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Availability and Speed Test
+        run: |
+          pytest tests/cron_tests/test_health.py || true
+          mkdir -p allure-results
+          cp categories.json allure-results/
+          ls -l allure-results/
+        continue-on-error: true
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: allure-results
+          allure_report: allure-report
+          gh_pages: gh-pages
+          keep_histories: 20
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./allure-report
+
+      - name: Send Telegram Notification
+        uses: hjnavas/allure-notifications-action@v1
+        if: always()
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          allure_results: allure-results
