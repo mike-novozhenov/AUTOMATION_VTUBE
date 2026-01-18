@@ -2,7 +2,7 @@ name: Scheduled Health Check
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 * * * *' # Изменил на 15 мин, чтобы не частить, пока отлаживаем
   workflow_dispatch:
 
 jobs:
@@ -34,15 +34,19 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Availability and Speed Test
+        # УБРАНО || true: теперь GitHub увидит реальный FAILED, если задержка > 0.3s
         run: |
-          # ДОБАВЛЕНО: --alluredir и --reruns
-          pytest tests/cron_tests/test_health.py --alluredir=allure-results --reruns 2 || true
-          
+          pytest tests/cron_tests/test_health.py --alluredir=allure-results --reruns 2
+
+      - name: Prepare Allure Artifacts
+        # if: always() гарантирует, что мы соберем данные для отчета даже после провала тестов
+        if: always()
+        run: |
           mkdir -p allure-results
           cp categories.json allure-results/ || echo "categories.json missing"
-        continue-on-error: true
 
       - name: Generate Allure Report
+        # Генерируем отчет ТОЛЬКО если тесты упали (экономим время и минуты)
         if: failure()
         uses: simple-elf/allure-report-action@master
         with:
@@ -52,22 +56,23 @@ jobs:
           keep_reports: 10
 
       - name: Deploy to GitHub Pages
+        # Деплоим отчет ТОЛЬКО если он был сгенерирован (при падении)
+        if: failure()
         uses: peaceiris/actions-gh-pages@v3
-        if: always()
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./allure-report
 
       - name: Send Smart Telegram Notification
+        # Отправляем ВСЕГДА, чтобы знать и о падениях, и о выздоровлении
         if: always()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           REPORT_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
         run: |
-          # Исправлено имя файла и логика передачи статуса
-          STATUS=${{ job.status }}
-          if [ "$STATUS" == "success" ]; then
+          # Используем внутреннюю логику: если какой-то шаг выше упал, job.status будет 'failure'
+          if [ "${{ job.status }}" == "success" ]; then
             python send_report_to_TG.py passed
           else
             python send_report_to_TG.py failed
