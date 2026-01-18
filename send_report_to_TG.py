@@ -26,57 +26,58 @@ def get_last_state():
         return {"status": "unknown", "timestamp": time.time(), "last_alert_at": 0}
 
 def send_telegram(message, silent=False):
-    """Отправляет уведомление с кнопкой и управляет закрепами (Term: Inline Keyboard)."""
+    """Отправляет уведомление и через паузу добавляет кнопку (Term: Message Editing)."""
     if not TOKEN or not CHAT_ID:
         print("Error: TELEGRAM_TOKEN or CHAT_ID not found!")
         return
 
-    # Добавляем метку времени к URL, чтобы обойти кэш (Term: Cache Busting)
-    fresh_report_url = f"{REPORT_URL}?t={int(time.time())}"
-
-    # Настройка кнопки под сообщением
-    keyboard = {
-        "inline_keyboard": [[
-            {"text": "📊 Open report", "url": fresh_report_url}
-        ]]
-    }
-
+    # 1. Отправляем текстовое сообщение с уведомлением о подготовке
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    status_msg = "\n\n⏳ <i>Generating fresh report...</i>"
+    
     payload = {
         "chat_id": CHAT_ID,
-        "text": message,
+        "text": message + status_msg,
         "parse_mode": "HTML",
-        "disable_notification": silent,
-        "reply_markup": json.dumps(keyboard) # Добавляем кнопку в запрос
+        "disable_notification": silent
     }
     
     try:
         response = requests.post(url, json=payload)
-        
         if response.status_code != 200:
             print(f"❌ Telegram API Error: {response.text}")
             return
 
         result = response.json()
         msg_id = result.get('result', {}).get('message_id')
-        
-        # Если это не "тихое" сообщение, делаем закреп (Term: Pin)
+
+        # 2. Делаем закреп сразу (Term: Pin), чтобы была всплывашка
         if not silent and msg_id:
-            # 1. Удаляем все старые закрепы
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/unpinAllChatMessages", 
-                          json={"chat_id": CHAT_ID})
-            
-            # 2. Закрепляем новое для всплывашки
-            pin_payload = {
-                "chat_id": CHAT_ID,
-                "message_id": msg_id,
-                "disable_notification": False 
-            }
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/unpinAllChatMessages", json={"chat_id": CHAT_ID})
+            pin_payload = {"chat_id": CHAT_ID, "message_id": msg_id, "disable_notification": False}
             requests.post(f"https://api.telegram.org/bot{TOKEN}/pinChatMessage", json=pin_payload)
 
-        print(f"✅ Message sent with fresh button. Silent: {silent}")
+        # 3. Ждем 20 секунд (Term: Sync Delay), пока GitHub Pages деплоит Allure
+        print("Waiting 20s for deployment before adding the button...")
+        time.sleep(20)
+
+        # 4. Редактируем сообщение: добавляем кнопку и убираем статус ожидания
+        edit_url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
+        fresh_report_url = f"{REPORT_URL}?t={int(time.time())}"
+        keyboard = {"inline_keyboard": [[{"text": "📊 Open report", "url": fresh_report_url}]]}
+        
+        edit_payload = {
+            "chat_id": CHAT_ID,
+            "message_id": msg_id,
+            "text": message,  # Текст без надписи "Generating..."
+            "parse_mode": "HTML",
+            "reply_markup": json.dumps(keyboard)
+        }
+        requests.post(edit_url, json=edit_payload)
+
+        print(f"✅ Message updated with report button. Silent: {silent}")
     except Exception as e:
-        print(f"⚠️ Failed to send message: {e}")
+        print(f"⚠️ Failed to manage telegram message: {e}")
 
 def format_duration(seconds):
     """Превращает секунды в читаемый формат (Term: Formatting)."""
@@ -99,35 +100,24 @@ def main():
     is_silent = False
     should_send = False
 
-    # 1. Логика RECOVERY
+    # Логика уведомлений
     if current_status == "passed" and last_state['status'] == "failed":
-        msg = (
-            f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n"
-            f"🔔 @MishaNovo @MarynaNovo"
-        )
+        msg = f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n🔔 @MishaNovo @MarynaNovo"
         should_send = True
-
-    # 2. Логика FIRST ALERT
     elif current_status == "failed" and last_state['status'] != "failed":
-        msg = (
-            f"🚨 <b>ALERT</b>: The site is unavailable!\n\n"
-            f"🔔 @MishaNovo @MarynaNovo"
-        )
+        msg = f"🚨 <b>ALERT</b>: The site is unavailable!\n\n🔔 @MishaNovo @MarynaNovo"
         should_send = True
-
-    # 3. Логика STILL FAILING
     elif current_status == "failed" and last_state['status'] == "failed":
         msg = f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})"
         is_silent = True
         should_send = True
-
-    # 4. Логика HEARTBEAT
     elif current_status == "passed" and last_alert_diff > THREE_HOURS:
         msg = f"🟢 <b>Heartbeat</b>: The site is available\nMonitoring is active"
         is_silent = True
         should_send = True
 
     if should_send:
+        # Теперь пауза внутри функции send_telegram для UI эффекта
         send_telegram(msg, silent=is_silent)
         last_state['last_alert_at'] = now
 
@@ -135,7 +125,6 @@ def main():
         last_state['timestamp'] = now
     
     last_state['status'] = current_status
-    
     with open(STATUS_FILE, 'w') as f:
         json.dump(last_state, f)
 
