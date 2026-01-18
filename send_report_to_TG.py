@@ -10,8 +10,7 @@ load_dotenv()
 
 # Константы (Term: Configuration)
 STATUS_FILE = 'last_status.json'
-THREE_HOURS = 36
-#THREE_HOURS = 3 * 60 * 60
+THREE_HOURS = 3 * 60 * 60
 
 # Получаем данные из системы или из .env файла
 TOKEN = os.getenv('TELEGRAM_TOKEN')
@@ -74,7 +73,7 @@ def main():
     if current_status == "passed" and last_state['status'] == "failed":
         msg = (
         f"✅ *RESOLVED*: Site is available. Was unavailable: {downtime}\n\n"
-        f"🔔 @admin_user1 @admin_user2\n"
+        f"🔔 @MishaNovo\n"
         f"[Open report]({REPORT_URL})"
         )
         should_send = True
@@ -83,7 +82,7 @@ def main():
     elif current_status == "failed" and last_state['status'] != "failed":
         msg = (
         f"🚨 *ALERT*: The site is unavailable!\n\n"
-        f"🔔 @admin_user1 @admin_user2\n"
+        f"🔔 @MishaNovo\n"
         f" [Open report]({REPORT_URL})"
         )
         should_send = True
