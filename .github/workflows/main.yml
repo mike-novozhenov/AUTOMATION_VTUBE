@@ -20,7 +20,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      # --- ДОБАВЛЕНО: Восстановление кэша статуса ---
       - name: Restore Status Cache
         uses: actions/cache@v3
         with:
@@ -44,13 +43,13 @@ jobs:
         continue-on-error: true
 
       - name: Generate Allure Report
+        if: failure()
         uses: simple-elf/allure-report-action@master
-        if: always()
         with:
           allure_results: allure-results
           allure_report: allure-report
           gh_pages: gh-pages
-          keep_reports: 20
+          keep_reports: 10
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
