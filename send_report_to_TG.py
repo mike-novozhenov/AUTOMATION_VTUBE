@@ -67,16 +67,15 @@ def main():
     is_silent = False
     should_send = False
 
-    # 1. Логика RECOVERY (Исправлены теги </b> и формат ссылки)
+    # 1. Логика RECOVERY
     if current_status == "passed" and last_state['status'] == "failed":
         msg = (
             f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n"
             f"🔔 @MishaNovo\n"
-            f'<a href="{REPORT_URL}">Open report</a>'
         )
         should_send = True
 
-    # 2. Логика FIRST ALERT (Исправлена ссылка с Markdown на HTML)
+    # 2. Логика FIRST ALERT
     elif current_status == "failed" and last_state['status'] != "failed":
         msg = (
             f"🚨 <b>ALERT</b>: The site is unavailable!\n\n"
@@ -85,7 +84,7 @@ def main():
         )
         should_send = True
 
-    # 3. Логика STILL FAILING (Убраны []() и исправлен </b>)
+    # 3. Логика STILL FAILING
     elif current_status == "failed" and last_state['status'] == "failed":
         msg = (
             f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})\n"
@@ -94,7 +93,7 @@ def main():
         is_silent = True
         should_send = True
 
-    # 4. Логика HEARTBEAT (Исправлен закрывающий тег)
+    # 4. Логика HEARTBEAT
     elif current_status == "passed" and last_alert_diff > THREE_HOURS:
         msg = f"🟢 <b>Heartbeat</b>: The site is available\nMonitoring is active (every 3 hours)"
         is_silent = True
