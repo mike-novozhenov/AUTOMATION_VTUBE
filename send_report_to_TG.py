@@ -3,7 +3,7 @@ import os
 import requests
 import time
 import sys
-from dotenv import load_dotenv  # 1. Добавили поддержку .env
+from dotenv import load_dotenv
 
 # Загружаем переменные окружения (Term: Environment Variables)
 load_dotenv() 
@@ -15,7 +15,6 @@ THREE_HOURS = 3 * 60 * 60
 # Получаем данные из системы или из .env файла
 TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-# На локалке REPORT_URL возьмется из .env, на GitHub — из YAML
 REPORT_URL = os.getenv('REPORT_URL', 'https://github.com')
 
 def get_last_state():
@@ -36,7 +35,7 @@ def send_telegram(message, silent=False):
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
-        "parse_mode": "HTML",
+        "parse_mode": "HTML", # Используем HTML для красоты (Term: Parse Mode)
         "disable_notification": silent
     }
     
@@ -61,7 +60,6 @@ def main():
     last_state = get_last_state()
     now = time.time()
     
-    # Расчет времени с момента изменения статуса (Term: Time Difference)
     downtime = format_duration(now - last_state.get('timestamp', now))
     last_alert_diff = now - last_state.get('last_alert_at', 0)
 
@@ -69,36 +67,36 @@ def main():
     is_silent = False
     should_send = False
 
-    # 1. Логика RECOVERY (Починилось)
+    # 1. Логика RECOVERY (Исправлены теги </b> и формат ссылки)
     if current_status == "passed" and last_state['status'] == "failed":
         msg = (
-        f"✅ *RESOLVED*: Site is available. Was unavailable: {downtime}\n\n"
-        f"🔔 @MishaNovo\n"
-        f"[Open report]({REPORT_URL})"
+            f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n"
+            f"🔔 @MishaNovo\n"
+            f'<a href="{REPORT_URL}">Open report</a>'
         )
         should_send = True
 
-    # 2. Логика FIRST ALERT (Упало впервые)
+    # 2. Логика FIRST ALERT (Исправлена ссылка с Markdown на HTML)
     elif current_status == "failed" and last_state['status'] != "failed":
         msg = (
-        f"🚨 *ALERT*: The site is unavailable!\n\n"
-        f"🔔 @MishaNovo\n"
-        f" [Open report]({REPORT_URL})"
+            f"🚨 <b>ALERT</b>: The site is unavailable!\n\n"
+            f"🔔 @MishaNovo\n"
+            f'<a href="{REPORT_URL}">Open report</a>'
         )
         should_send = True
 
-    # 3. Логика STILL FAILING (Повторное падение — Silent Mode)
+    # 3. Логика STILL FAILING (Убраны []() и исправлен </b>)
     elif current_status == "failed" and last_state['status'] == "failed":
         msg = (
-        f"⚠️ *Status Update*: The site is still not working! (Total time: {downtime})\n"
-        f"[Open report]({REPORT_URL})"
+            f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})\n"
+            f'<a href="{REPORT_URL}">Open report</a>'
         )
         is_silent = True
         should_send = True
 
-    # 4. Логика HEARTBEAT (Раз в 3 часа)
+    # 4. Логика HEARTBEAT (Исправлен закрывающий тег)
     elif current_status == "passed" and last_alert_diff > THREE_HOURS:
-        msg = f"🟢 *Heartbeat*: The site is available\nMonitoring is active (every 3 hours)"
+        msg = f"🟢 <b>Heartbeat</b>: The site is available\nMonitoring is active (every 3 hours)"
         is_silent = True
         should_send = True
 
@@ -106,7 +104,6 @@ def main():
         send_telegram(msg, silent=is_silent)
         last_state['last_alert_at'] = now
 
-    # Обновляем "таймер" только если статус изменился (Term: State Management)
     if current_status != last_state['status']:
         last_state['timestamp'] = now
     
