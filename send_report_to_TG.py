@@ -31,10 +31,13 @@ def send_telegram(message, silent=False):
         print("Error: TELEGRAM_TOKEN or CHAT_ID not found!")
         return
 
+    # Добавляем метку времени к URL, чтобы обойти кэш (Term: Cache Busting)
+    fresh_report_url = f"{REPORT_URL}?t={int(time.time())}"
+
     # Настройка кнопки под сообщением
     keyboard = {
         "inline_keyboard": [[
-            {"text": "📊 Open report", "url": REPORT_URL}
+            {"text": "📊 Open report", "url": fresh_report_url}
         ]]
     }
 
@@ -71,7 +74,7 @@ def send_telegram(message, silent=False):
             }
             requests.post(f"https://api.telegram.org/bot{TOKEN}/pinChatMessage", json=pin_payload)
 
-        print(f"✅ Message sent with button. Silent: {silent}")
+        print(f"✅ Message sent with fresh button. Silent: {silent}")
     except Exception as e:
         print(f"⚠️ Failed to send message: {e}")
 
