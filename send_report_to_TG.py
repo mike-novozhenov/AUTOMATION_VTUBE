@@ -71,7 +71,7 @@ def main():
     if current_status == "passed" and last_state['status'] == "failed":
         msg = (
             f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n"
-            f"🔔 @MishaNovo\n"
+            f"🔔 @MishaNovo @MarynaNovo\n"
         )
         should_send = True
 
@@ -79,7 +79,7 @@ def main():
     elif current_status == "failed" and last_state['status'] != "failed":
         msg = (
             f"🚨 <b>ALERT</b>: The site is unavailable!\n\n"
-            f"🔔 @MishaNovo\n"
+            f"🔔 @MishaNovo @MarynaNovo\n"
             f'<a href="{REPORT_URL}">Open report</a>'
         )
         should_send = True
