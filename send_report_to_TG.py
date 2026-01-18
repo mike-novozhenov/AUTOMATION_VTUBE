@@ -26,24 +26,32 @@ def get_last_state():
         return {"status": "unknown", "timestamp": time.time(), "last_alert_at": 0}
 
 def send_telegram(message, silent=False):
-    """Отправляет уведомление и управляет закрепами (Term: Request)."""
+    """Отправляет уведомление с кнопкой и управляет закрепами (Term: Inline Keyboard)."""
     if not TOKEN or not CHAT_ID:
         print("Error: TELEGRAM_TOKEN or CHAT_ID not found!")
         return
+
+    # Настройка кнопки под сообщением
+    keyboard = {
+        "inline_keyboard": [[
+            {"text": "📊 Open report", "url": REPORT_URL}
+        ]]
+    }
 
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
         "parse_mode": "HTML",
-        "disable_notification": silent
+        "disable_notification": silent,
+        "reply_markup": json.dumps(keyboard) # Добавляем кнопку в запрос
     }
     
     try:
         response = requests.post(url, json=payload)
         
         if response.status_code != 200:
-            print(f"❌ Telegram API Error: {response.text}") # Показывает причину 400 ошибки
+            print(f"❌ Telegram API Error: {response.text}")
             return
 
         result = response.json()
@@ -59,12 +67,11 @@ def send_telegram(message, silent=False):
             pin_payload = {
                 "chat_id": CHAT_ID,
                 "message_id": msg_id,
-                "disable_notification": False # Форсируем уведомление
+                "disable_notification": False 
             }
-            pin_res = requests.post(f"https://api.telegram.org/bot{TOKEN}/pinChatMessage", json=pin_payload)
-            print(f"📌 Pin Status: {pin_res.status_code}")
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/pinChatMessage", json=pin_payload)
 
-        print(f"✅ Message sent. Silent: {silent}")
+        print(f"✅ Message sent with button. Silent: {silent}")
     except Exception as e:
         print(f"⚠️ Failed to send message: {e}")
 
@@ -89,7 +96,7 @@ def main():
     is_silent = False
     should_send = False
 
-    # 1. Логика RECOVERY (Всплывашка)
+    # 1. Логика RECOVERY
     if current_status == "passed" and last_state['status'] == "failed":
         msg = (
             f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n"
@@ -97,28 +104,23 @@ def main():
         )
         should_send = True
 
-    # 2. Логика FIRST ALERT (Всплывашка)
+    # 2. Логика FIRST ALERT
     elif current_status == "failed" and last_state['status'] != "failed":
-        # Используем простую ссылку, чтобы избежать 400 ошибки из-за спецсимволов
         msg = (
             f"🚨 <b>ALERT</b>: The site is unavailable!\n\n"
-            f"🔔 @MishaNovo @MarynaNovo\n\n"
-            f"Report: {REPORT_URL}"
+            f"🔔 @MishaNovo @MarynaNovo"
         )
         should_send = True
 
-    # 3. Логика STILL FAILING (Тихо)
+    # 3. Логика STILL FAILING
     elif current_status == "failed" and last_state['status'] == "failed":
-        msg = (
-            f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})\n"
-            f"Report: {REPORT_URL}"
-        )
+        msg = f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})"
         is_silent = True
         should_send = True
 
-    # 4. Логика HEARTBEAT (Тихо)
+    # 4. Логика HEARTBEAT
     elif current_status == "passed" and last_alert_diff > THREE_HOURS:
-        msg = f"🟢 <b>Heartbeat</b>: The site is available\nMonitoring is active (every 3 hours)"
+        msg = f"🟢 <b>Heartbeat</b>: The site is available\nMonitoring is active"
         is_silent = True
         should_send = True
 
