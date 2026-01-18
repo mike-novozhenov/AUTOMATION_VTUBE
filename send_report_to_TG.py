@@ -26,56 +26,52 @@ def get_last_state():
         return {"status": "unknown", "timestamp": time.time(), "last_alert_at": 0}
 
 def send_telegram(message, silent=False):
-    """Отправляет уведомление и через паузу добавляет кнопку (Term: Message Editing)."""
+    """Отправляет уведомление со счетчиком и кнопкой без закрепов (Term: Message Editing)."""
     if not TOKEN or not CHAT_ID:
         print("Error: TELEGRAM_TOKEN or CHAT_ID not found!")
         return
 
-    # 1. Отправляем текстовое сообщение с уведомлением о подготовке
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    status_msg = "\n\n⏳ <i>Generating fresh report... 20s</i>"
-    
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message + status_msg,
-        "parse_mode": "HTML",
-        "disable_notification": silent
-    }
+    edit_url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
     
     try:
+        # 1. Первая стадия: Сообщение и уведомление о 20 секундах
+        payload = {
+            "chat_id": CHAT_ID,
+            "text": message + "\n\n⏳ <i>Generating report... 20s</i>",
+            "parse_mode": "HTML",
+            "disable_notification": silent
+        }
+        
         response = requests.post(url, json=payload)
-        if response.status_code != 200:
-            print(f"❌ Telegram API Error: {response.text}")
-            return
+        res_data = response.json()
+        msg_id = res_data.get('result', {}).get('message_id')
+        if not msg_id: return
 
-        result = response.json()
-        msg_id = result.get('result', {}).get('message_id')
+        # 2. Вторая стадия: Ожидание 10 секунд и обновление текста
+        time.sleep(10)
+        requests.post(edit_url, json={
+            "chat_id": CHAT_ID,
+            "message_id": msg_id,
+            "text": message + "\n\n⏳ <i>Generating report... 10s</i>",
+            "parse_mode": "HTML"
+        })
 
-        # 2. Делаем закреп сразу (Term: Pin), чтобы была всплывашка
-        if not silent and msg_id:
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/unpinAllChatMessages", json={"chat_id": CHAT_ID})
-            pin_payload = {"chat_id": CHAT_ID, "message_id": msg_id, "disable_notification": False}
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/pinChatMessage", json=pin_payload)
-
-        # 3. Ждем 20 секунд (Term: Sync Delay), пока GitHub Pages деплоит Allure
-        print("Waiting 20s for deployment before adding the button...")
-        time.sleep(20)
-
-        # 4. Редактируем сообщение: добавляем кнопку и убираем статус ожидания
-        edit_url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
-        fresh_report_url = f"{REPORT_URL}?t={int(time.time())}"
+        # 3. Финальная стадия: Еще 10 секунд и добавление кнопки (Term: Sync Delay)
+        time.sleep(10)
+        fresh_report_url = f"{REPORT_URL}?t={int(time.time())}" # Cache Busting
         keyboard = {"inline_keyboard": [[{"text": "📊 Open report", "url": fresh_report_url}]]}
         
         edit_payload = {
             "chat_id": CHAT_ID,
             "message_id": msg_id,
-            "text": message,  # Текст без надписи "Generating..."
+            "text": message, 
             "parse_mode": "HTML",
             "reply_markup": json.dumps(keyboard)
         }
         requests.post(edit_url, json=edit_payload)
 
-        print(f"✅ Message updated with report button. Silent: {silent}")
+        print(f"✅ Message sent. Button added after 20s sync.")
     except Exception as e:
         print(f"⚠️ Failed to manage telegram message: {e}")
 
@@ -117,7 +113,6 @@ def main():
         should_send = True
 
     if should_send:
-        # Теперь пауза внутри функции send_telegram для UI эффекта
         send_telegram(msg, silent=is_silent)
         last_state['last_alert_at'] = now
 
