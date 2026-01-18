@@ -33,7 +33,7 @@ def send_telegram(message, silent=False):
 
     # 1. Отправляем текстовое сообщение с уведомлением о подготовке
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    status_msg = "\n\n⏳ <i>Generating fresh report...</i>"
+    status_msg = "\n\n⏳ <i>Generating fresh report... 20s</i>"
     
     payload = {
         "chat_id": CHAT_ID,
