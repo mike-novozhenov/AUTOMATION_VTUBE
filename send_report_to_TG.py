@@ -36,7 +36,7 @@ def send_telegram(message, silent=False):
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
         "disable_notification": silent
     }
     
