@@ -20,6 +20,15 @@ jobs:
         with:
           python-version: '3.11'
 
+      # --- ДОБАВЛЕНО: Восстановление кэша статуса ---
+      - name: Restore Status Cache
+        uses: actions/cache@v3
+        with:
+          path: last_status.json
+          key: tg-status-${{ github.run_id }}
+          restore-keys: |
+            tg-status-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -27,12 +36,11 @@ jobs:
 
       - name: Run Availability and Speed Test
         run: |
-          # Сначала запускаем тесты, игнорируя их падение для продолжения шагов
-          pytest tests/cron_tests/test_health.py || true
-          # Гарантируем наличие папки и копируем категории
+          # ДОБАВЛЕНО: --alluredir и --reruns
+          pytest tests/cron_tests/test_health.py --alluredir=allure-results --reruns 2 || true
+          
           mkdir -p allure-results
           cp categories.json allure-results/ || echo "categories.json missing"
-          ls -l allure-results/
         continue-on-error: true
 
       - name: Generate Allure Report
@@ -51,16 +59,17 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./allure-report
 
-      # - name: Send Telegram Notification
-      #   # Заменили упавший экшен на стабильный appleboy
-      #   uses: appleboy/telegram-action@master
-      #   if: always()
-      #   with:
-      #     to: ${{ secrets.TELEGRAM_CHAT_ID }}
-      #     token: ${{ secrets.TELEGRAM_TOKEN }}
-      #     message: |
-      #       🚀 Health Check Completed!
-      #       Status: ${{ job.status }}
-      #       Project: ${{ github.repository }}
-            
-      #       Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      - name: Send Smart Telegram Notification
+        if: always()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPORT_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: |
+          # Исправлено имя файла и логика передачи статуса
+          STATUS=${{ job.status }}
+          if [ "$STATUS" == "success" ]; then
+            python send_report_to_TG.py passed
+          else
+            python send_report_to_TG.py failed
+          fi
