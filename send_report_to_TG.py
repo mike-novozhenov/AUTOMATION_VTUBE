@@ -102,10 +102,10 @@ def main():
 
     # Логика уведомлений
     if current_status == "passed" and last_state['status'] == "failed":
-        msg = f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n🔔 @MishaNovo @MarynaNovo"
+        msg = f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n🔔 @MishaNovo"
         should_send = True
     elif current_status == "failed" and last_state['status'] != "failed":
-        msg = f"🚨 <b>ALERT</b>: The site is unavailable!\n\n🔔 @MishaNovo @MarynaNovo"
+        msg = f"🚨 <b>ALERT</b>: The site is unavailable!\n\n🔔 @MishaNovo"
         should_send = True
     elif current_status == "failed" and last_state['status'] == "failed":
         msg = f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})"
