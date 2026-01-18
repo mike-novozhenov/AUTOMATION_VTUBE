@@ -1,5 +1,11 @@
 name: Scheduled Health Check
 
+# Настройка предотвращения гонки (Term: Concurrency Control)
+# Если ты запустишь новый тест, старый (висящий на деплое) автоматически отменится
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron: '*/10 * * * *' 
@@ -21,11 +27,9 @@ jobs:
           python-version: '3.11'
 
       - name: Restore Status Cache
-        # Term: Cache Restoration — подтягиваем статус прошлого запуска
         uses: actions/cache/restore@v3
         with:
           path: last_status.json
-          # Используем общий префикс, чтобы всегда находить последний доступный кеш
           key: tg-status-${{ github.run_id }}
           restore-keys: |
             tg-status-
@@ -36,9 +40,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Availability and Speed Test
-        # Здесь нет || true, чтобы джоба честно падала при медленной работе
+        # Добавил --clean-alluredir, чтобы в отчет не попадал старый мусор (Term: Housekeeping)
         run: |
-          pytest tests/cron_tests/test_health.py --alluredir=allure-results --reruns 2
+          pytest tests/cron_tests/test_health.py --alluredir=allure-results --clean-alluredir --reruns 2
 
       - name: Prepare Allure Artifacts
         if: always()
@@ -47,7 +51,8 @@ jobs:
           cp categories.json allure-results/ || echo "categories.json missing"
 
       - name: Generate Allure Report
-        if: failure()
+        # ИСПРАВЛЕНО: Теперь отчет генерируется ВСЕГДА (и для успеха, и для падения)
+        if: always()
         uses: simple-elf/allure-report-action@master
         with:
           allure_results: allure-results
@@ -56,7 +61,8 @@ jobs:
           keep_reports: 10
 
       - name: Deploy to GitHub Pages
-        if: failure()
+        # ИСПРАВЛЕНО: Теперь сайт обновляется ВСЕГДА
+        if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -76,10 +82,8 @@ jobs:
           fi
 
       - name: Save Status Cache
-        # Term: Cache Persistence — сохраняем обновленный last_status.json для следующего раза
         if: always()
         uses: actions/cache/save@v3
         with:
           path: last_status.json
-          # Уникальный ключ для сохранения
           key: tg-status-${{ github.run_id }}
