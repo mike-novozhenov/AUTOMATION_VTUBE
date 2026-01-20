@@ -17,17 +17,16 @@ env/
 ENV/
 
 
-# Логи и отчеты
+# Logs and reports
 *.log
 /reports/
 /screenshots/
+allure-results/
+allure-report/
 
 # Секретные данные
 .env
 
 # Private notes
 NOTES/
-
-venv/
-allure-results/
-allure-report/
+Backups/

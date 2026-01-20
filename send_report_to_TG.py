@@ -75,10 +75,10 @@ def send_telegram(message, silent=False):
     except Exception as e:
         print(f"⚠️ Failed to manage telegram message: {e}")
 
-def format_duration(seconds):
-    """Превращает секунды в читаемый формат (Term: Formatting)."""
-    mins = int(seconds // 60)
-    return f"{mins} min." if mins > 0 else "less than 1 minute"
+# def format_duration(seconds):
+#     """Превращает секунды в читаемый формат (Term: Formatting)."""
+#     mins = int(seconds // 60)
+#     return f"{mins} min." if mins > 0 else "less than 1 minute"
 
 def main():
     if len(sys.argv) < 2:
@@ -89,7 +89,7 @@ def main():
     last_state = get_last_state()
     now = time.time()
     
-    downtime = format_duration(now - last_state.get('timestamp', now))
+    #downtime = format_duration(now - last_state.get('timestamp', now))
     last_alert_diff = now - last_state.get('last_alert_at', 0)
 
     msg = ""
@@ -98,13 +98,13 @@ def main():
 
     # Логика уведомлений
     if current_status == "passed" and last_state['status'] == "failed":
-        msg = f"✅ <b>RESOLVED</b>: Site is available. Was unavailable: {downtime}\n\n🔔 @MishaNovo"
+        msg = f"✅ <b>RESOLVED</b>: Site is available\n\n🔔 @MishaNovo @ulans2 @ram333n"
         should_send = True
     elif current_status == "failed" and last_state['status'] != "failed":
-        msg = f"🚨 <b>ALERT</b>: The site is unavailable!\n\n🔔 @MishaNovo"
+        msg = f"🚨 <b>ALERT</b>: The site is unavailable!\n\n🔔 @MishaNovo @ulans2 @ram333n"
         should_send = True
     elif current_status == "failed" and last_state['status'] == "failed":
-        msg = f"⚠️ <b>Status Update</b>: The site is still not working! (Total time: {downtime})"
+        msg = f"⚠️ <b>Status Update</b>: The site is still not working!"
         is_silent = True
         should_send = True
     elif current_status == "passed" and last_alert_diff > THREE_HOURS:
