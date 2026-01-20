@@ -1,1 +1,1 @@
-{"total":1,"items":[{"uid":"3911c46a6fc0f88f0cecd4c59b7aff95","name":"Monitoring Services","statistic":{"failed":0,"broken":1,"skipped":0,"passed":0,"unknown":0,"total":1}}]}
+{"total":1,"items":[{"uid":"3911c46a6fc0f88f0cecd4c59b7aff95","name":"Monitoring Services","statistic":{"failed":0,"broken":0,"skipped":0,"passed":1,"unknown":0,"total":1}}]}
