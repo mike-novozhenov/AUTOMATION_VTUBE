@@ -1,1 +1,1 @@
-{"total":1,"items":[{"uid":"b77c52282ac4cb218e6516d823bbea1a","name":"Product defects (Site errors)","statistic":{"failed":1,"broken":0,"skipped":0,"passed":0,"unknown":0,"total":1}}]}
+{"total":2,"items":[{"uid":"953f4613f0044b46b67c0f6a5f8cc8bb","name":"Test defects (Code issues)","statistic":{"failed":0,"broken":5,"skipped":0,"passed":0,"unknown":0,"total":5}},{"uid":"ee5ab5b7119b46e917353c3f03edf96f","name":"Infrastructure / Network issues","statistic":{"failed":0,"broken":5,"skipped":0,"passed":0,"unknown":0,"total":5}}]}
