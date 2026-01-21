@@ -1,15 +1,14 @@
 name: Scheduled Health Check
 
-# Настройка предотвращения гонки (Term: Concurrency Control)
-# Если ты запустишь новый тест, старый (висящий на деплое) автоматически отменится
+# Prevent race conditions between concurrent workflow runs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '*/10 * * * *' 
-  workflow_dispatch:
+    - cron: '*/10 * * * *' # Run every 10 minutes
+  workflow_dispatch: # Enable manual trigger
 
 jobs:
   health-check-job:
@@ -22,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -30,19 +29,24 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: last_status.json
-          key: tg-status-${{ github.run_id }}
+          key: tg-status-${{ runner.os }}-${{ github.workflow }}
           restore-keys: |
-            tg-status-
+            tg-status-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Availability and Speed Test
-        # Добавил --clean-alluredir, чтобы в отчет не попадал старый мусор (Term: Housekeeping)
+      - name: Run Quality Assurance Tests
+        id: run_tests
         run: |
-          pytest tests/cron_tests/test_health.py --alluredir=allure-results --clean-alluredir --reruns 2
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          pytest tests/monitoring/ \
+            -m cron_15min \
+            --alluredir=allure-results \
+            --clean-alluredir \
+            --reruns 2
 
       - name: Prepare Allure Artifacts
         if: always()
@@ -51,7 +55,6 @@ jobs:
           cp categories.json allure-results/ || echo "categories.json missing"
 
       - name: Generate Allure Report
-        # ИСПРАВЛЕНО: Теперь отчет генерируется ВСЕГДА (и для успеха, и для падения)
         if: always()
         uses: simple-elf/allure-report-action@master
         with:
@@ -61,7 +64,6 @@ jobs:
           keep_reports: 10
 
       - name: Deploy to GitHub Pages
-        # ИСПРАВЛЕНО: Теперь сайт обновляется ВСЕГДА
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -73,12 +75,15 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Construct dynamic URL for the deployed Allure report
           REPORT_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            python send_report_to_TG.py passed
+          TEST_RESULT="${{ steps.run_tests.outcome }}"
+
+          if [ "$TEST_RESULT" == "success" ]; then
+            python src/providers/telegram_client.py passed "$REPORT_URL"
           else
-            python send_report_to_TG.py failed
+            python src/providers/telegram_client.py failed "$REPORT_URL"
           fi
 
       - name: Save Status Cache
@@ -86,4 +91,5 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: last_status.json
-          key: tg-status-${{ github.run_id }}
+          # Unique key per run to ensure cache is updated correctly
+          key: tg-status-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}

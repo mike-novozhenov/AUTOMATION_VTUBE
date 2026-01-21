@@ -1,15 +1,14 @@
 # Base URL
 BASE_URL = "https://erozyx.com"
 
-# Глобальный порог скорости для всех страниц (SLA)
+# Global speed threshold for all pages (SLA)
 MAX_WAIT_TIME = 2
 
-# Список страниц для мониторинга (Endpoints)
-# Ты можешь добавлять сюда любые пути
+# Endpoints list
 ENDPOINTS = [
     BASE_URL + "/",               # Home
     BASE_URL + "/videos",         # Videos
-    BASE_URL + "/categories",     # Niches or Categories list
+    BASE_URL + "/categories",     # Categories list
     BASE_URL + "/channels",       # Channels
-    BASE_URL + "/community",       # Community
+    BASE_URL + "/community",      # Community
 ]
